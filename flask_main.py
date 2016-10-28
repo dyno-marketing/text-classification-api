@@ -8,19 +8,15 @@ if __name__ == "__main__":
     print('Argument List:', str(sys.argv))
 
     debug = False
-    dev_mode = 'dev'
-    log_mode = 'log'
 
-    if log_mode in str(sys.argv):
+    if "enable_log_flag" in str(sys.argv):
         setup_logging()
 
-    if dev_mode in str(sys.argv):
+    if "enable_debug_mode" in str(sys.argv):
         debug = True
 
     logger = logging.getLogger(__name__)
 
-    logger.info("start rd_report_api")
-
+    logger.info("start api at ", )
     app.run(debug=debug, host=config.BACKEND_CONFIG['server'], port=config.BACKEND_CONFIG['port'])
-
-    logger.error("stop rd_report_api")
+    logger.error("stop api")
