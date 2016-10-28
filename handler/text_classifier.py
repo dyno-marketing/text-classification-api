@@ -1,39 +1,41 @@
 __author__ = 'tuanvu'
 __create_time__ = '19/06/2015 11:14 AM'
 
-import datetime
-from flask import make_response, request
-from flask.ext import restful
 import json
 import logging
-from report.shop_report import get_view_item_mongo, get_click_item_mongo
+
+import flask_restful
+from flask import make_response, request
+from sklearn.externals import joblib
+import pandas as pd
+
+tfidf = joblib.load('model/tfidf_model.pkl')
+model = joblib.load('model/prediction_model.pkl')
 
 
-class ShopReportHandler(restful.Resource):
-    def __init__(self, *argc, **argkw):
+class TextClassifier(flask_restful.Resource):
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def get(self, project):
-        result = {}
-        try:
-            owner_id = request.args.get('owner_id', 0)
-            start_time = request.args.get('start_time', "")
-            end_time = request.args.get('end_time', "")
-            type = request.args.get('type', "")
-        except Exception:
-            result['result'] = []
-            result['msg'] = "can not get atttribute"
-            self.logger.info(str(datetime.datetime.now()) + ": " + "can not get parameters!")
+    def post(self):
+        json_data = request.get_json(force=True)
+        id = json_data['id']
+        name = json_data['name']
 
-        if type == "click":
-            result['result'] = get_click_item_mongo(int(owner_id), start_time, end_time, project)
-            result['msg'] = "click successful"
-        elif type == "view":
-            result['result'] = get_view_item_mongo(int(owner_id), start_time, end_time, project)
-            result['msg'] = "view successful"
-        else:
-            result['result'] = []
-            result['msg'] = "type failure"
+        df = pd.DataFrame(columns=('id', 'name'))
+
+        row = dict(zip(['id', 'name'], [id, name]))
+        row_s = pd.Series(row)
+        row_s.name = 1
+        df = df.append(row_s)
+
+        print(df["name"])
+
+        print(tfidf.transform(df["name"]).toarray())
+
+        class_name = model.predict(tfidf.transform(df["name"]).toarray())[0]
+
+        result = {"class_name": class_name}
 
         response = make_response(json.dumps(result))
         response.headers['Content-type'] = 'application/json'
